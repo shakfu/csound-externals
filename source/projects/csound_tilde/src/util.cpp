@@ -1,21 +1,21 @@
 /*
     csound~ : A MaxMSP external interface for the Csound API.
-    
+
     Created by Davis Pyon on 2/4/06.
     Copyright 2006-2010 Davis Pyon. All rights reserved.
-    
+
     LICENSE AGREEMENT
-    
+
     This software is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
-    
+
     This software is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this software; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -24,12 +24,9 @@
 #include "util.h"
 
 #if defined(__MACH__)
-// #include <LaunchServices.h>
 #include <CoreServices/CoreServices.h>
 #include <CoreFoundation/CoreFoundation.h>
 #endif
-
-using namespace std;
 
 void change_directory(t_object *o, const char *path)
 {
@@ -63,7 +60,7 @@ void change_directory(t_object *o, const char *path)
 				break;
 			case EIO:
 				object_post(o, "EIO: An I/O error occurred while reading from or writing to the file system.");
-				break;						
+				break;
 			}
 
 	#endif
@@ -85,12 +82,12 @@ void to_lower(std::string & str)
 }
 
 // Reverses size bytes in b.
-void reverseBytes(t_csbyte *b, int size)
+void reverseBytes(csbyte *b, int size)
 {
 	int i, j, limit = size >> 1;
-	
+
 	--size;
-	
+
 	for(i=0; i < limit; ++i)
 	{
 		j = size - i;
@@ -100,8 +97,8 @@ void reverseBytes(t_csbyte *b, int size)
 	}
 }
 
-void reverseNumber(t_csbyte *b, int size, bool reverse)
-{	
+void reverseNumber(csbyte *b, int size, bool reverse)
+{
 	if(reverse && size > 1)	reverseBytes(b, size);
 }
 
@@ -130,7 +127,7 @@ bool isQuoted(const std::string & s)
 bool isQuoted(const char *str)
 {
 	int len = strlen(str);
-	if(str[0] == '"' && str[len-1] == '"') 
+	if(str[0] == '"' && str[len-1] == '"')
 		return true;
 	return false;
 }
@@ -148,16 +145,16 @@ void removeQuotes(char *str)
 {
 	int len = strlen(str);
 	if(len < 2) return;
-	
+
 	for(int i=0; i<(len-1); i++)
 		str[i] = str[i+1];
-	
+
 	str[len-2] = '\0';
 }
 
 void addQuotes(const char *src, char *dst, int capacity)
 {
-	snprintf(dst, capacity-1, "\"%s\"", src);	
+	snprintf(dst, capacity-1, "\"%s\"", src);
 }
 
 void openFile(t_object *o, const char *path)
@@ -165,7 +162,7 @@ void openFile(t_object *o, const char *path)
 #ifdef MACOSX
 	char tmpPath[MAX_STRING_LENGTH];
 	OSStatus result;
-	
+
 	snprintf(tmpPath, MAX_STRING_LENGTH-1, "file://%s", path);
 
 	CFStringRef pathCFStr = CFStringCreateWithCString(kCFAllocatorDefault, tmpPath, kCFStringEncodingASCII);
@@ -178,7 +175,7 @@ void openFile(t_object *o, const char *path)
 		object_error(o, "Could not convert %s to CFURLRef.", path);
 		return;
 	}
-	
+
 	if (LSOpenCFURLRef(pathCFURL, NULL) != noErr)
 	{
 		object_error(o, "Could not open file: %s", path);
@@ -200,7 +197,7 @@ void openFile(t_object *o, const char *path)
 // #ifdef MACOSX
 // 	char  tmpPath[MAX_STRING_LENGTH];
 //  FSRef fsRef;
-	
+
 // 	snprintf(tmpPath, MAX_STRING_LENGTH-1, "file://%s", path);
 
 // 	if(FSPathMakeRef((UInt8*)path, &fsRef, false) != noErr)
@@ -208,7 +205,7 @@ void openFile(t_object *o, const char *path)
 // 		object_error(o, "Could not convert %s to FSRef.", path);
 // 		return;
 // 	}
-	
+
 // 	if(LSOpenFSRef(&fsRef, NULL) != noErr)
 // 	{
 // 		object_error(o, "Could not open file: %s", path);
@@ -225,7 +222,7 @@ void openFile(t_object *o, const char *path)
 bool isAbsolutePath(const char *path)
 {
 #ifdef MACOSX
-	return path[0] == '/'; 
+	return path[0] == '/';
 #elif _WINDOWS
 	return path[1] == ':' && (path[2] == '\\' || path[2] == '/');
 #endif
@@ -246,7 +243,7 @@ void convertMaxPathToPosixPath(std::string & s)
 #ifdef _WINDOWS
 	return;
 #else
-	string tmp = s;
+	std::string tmp = s;
 	size_t colon_pos = tmp.find_first_of(':');
 	tmp.erase(colon_pos,1);
 	s = "/Volumes/";
@@ -262,10 +259,10 @@ void convertMaxPathToPosixPath(const char *src, char *dst, int arraySize)
 #else
 	char *colonPtr = NULL;
 	char src_cpy[arraySize], volume[arraySize], path[arraySize];
-	
+
 	strncpy(src_cpy, src, arraySize - 1);
 	colonPtr = strchr(src_cpy, ':');
-	
+
 	if(colonPtr)
 	{
 		// It's a max style path.
@@ -273,10 +270,10 @@ void convertMaxPathToPosixPath(const char *src, char *dst, int arraySize)
 		strncpy(volume, src_cpy, arraySize - 1);
 		*colonPtr = ':';
 		strncpy(path, colonPtr + 1, arraySize - 1);
-				
+
 		// Form and output a Unix style path.
 		snprintf(dst, arraySize - 1, "/Volumes/%s%s", volume, path);
-	} 
+	}
 #endif
 }
 
@@ -291,7 +288,7 @@ int CreateAtomListFromString(t_object *o, const char *str, t_atom *atomList, int
 	// strtok() messes the string that it works with, so
 	// work on a duplicate of str.
 
-	s = strdup(str); 
+	s = strdup(str);
 	if(s == NULL) return 0;
 	p = strtok(s, whiteSpace);
 	atom_setsym(&atomList[i], gensym(p));

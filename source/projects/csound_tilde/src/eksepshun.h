@@ -24,7 +24,6 @@
 #include <exception>
 #include <cstring>
 
-using namespace std;
 
 namespace dvx {
 

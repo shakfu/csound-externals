@@ -52,7 +52,7 @@ public:
 	message_buffer(t_object *o);
 	~message_buffer() {}
 
-	void add(int type, const string & s);
+	void add(int type, const std::string & s);
 	void add(int type, const char * s);
 	void addv(int type, const char * s, ... );
 	void post();

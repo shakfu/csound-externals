@@ -3,30 +3,43 @@ cmake_minimum_required(VERSION 3.19)
 string(REGEX REPLACE "(.*)/" "" THIS_FOLDER_NAME "${CMAKE_CURRENT_SOURCE_DIR}")
 project(${THIS_FOLDER_NAME})
 
-option(C74_BUILD_FAT "Build Universal Externals")
+option(BUILD_UNIVERSAL "Build Universal Externals for macOS")
+option(BUILD_HYBRID "Build relocatable hybrid macOS bundle")
+option(BUILD_RELEASE "Build relocatable static macos bundle using vcpkg")
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+# use ccache if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "Found ccache in ${CCACHE_PROGRAM}")
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+endif()
 
 if (APPLE)
     if (${CMAKE_GENERATOR} MATCHES "Xcode")
             if (${XCODE_VERSION} VERSION_LESS 10)
                 message(STATUS "Xcode 10 or higher is required. Please install from the Mac App Store.")
                 return ()
-            # elseif(${XCODE_VERSION} VERSION_GREATER_EQUAL 12)
-            #     set(C74_BUILD_FAT YES)
             endif ()
     endif ()
 
     if (NOT CMAKE_OSX_ARCHITECTURES)
-        if(C74_BUILD_FAT)
+        if(BUILD_UNIVERSAL)
             set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "macOS architecture" FORCE)
         else()
             set(CMAKE_OSX_ARCHITECTURES ${CMAKE_SYSTEM_PROCESSOR} CACHE STRING "macOS architecture" FORCE)
         endif()
         message("CMAKE_OSX_ARCHITECTURES set to ${CMAKE_OSX_ARCHITECTURES}")
     endif()
-endif()
 
-if(CMAKE_HOST_APPLE) # i.e if is_macos check if homebrew is used aand if so get prefix
+    # if homebrew is available get prefix
     execute_process(
         COMMAND brew --prefix
         OUTPUT_VARIABLE HOMEBREW_PREFIX

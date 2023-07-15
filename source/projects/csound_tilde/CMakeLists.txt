@@ -1,12 +1,8 @@
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../max-sdk-base/script/max-pretarget.cmake)
 
 #############################################################
-# MAX EXTERNAL
+# csound~
 #############################################################
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "force it" FORCE)
-
-
-option(BUILD_RELOCATABLE OFF "builds relocatable macOS bundle")
 
 include_directories( 
     "${MAX_SDK_INCLUDES}"
@@ -15,6 +11,7 @@ include_directories(
 )
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SCRIPTS_DIR ${CMAKE_SOURCE_DIR}/source/scripts)
 
 set(PROJECT_SRC
     ${SRC_DIR}/Args.cpp
@@ -53,136 +50,40 @@ set(PROJECT_HEADERS
     ${SRC_DIR}/util.h
 )
 
-find_package(Boost)
+if(APPLE)
+    message(STATUS "building on macOS")
 
-find_library(LIBSNDFILE_DYLIB libsndfile.dylib 
-    PATHS 
-    ${MAX_INCLUDES_DIR}
-    $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}>
-)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING 
+        "override default MACOS_DEPLOYMENT_TARGET" FORCE)
 
-if (Boost_FOUND)
-    message("found Boost library: ${Boost_FOUND}")
-else()
-    message(FATAL_ERROR "could not find Boost library")
-endif()
+    if(BUILD_RELEASE)
+        include(${SCRIPTS_DIR}/macos_release.cmake)
 
-if (LIBSNDFILE_DYLIB)
-    message("found libsndfile library: ${LIBSNDFILE_DYLIB}")
-else()
-    message(FATAL_ERROR "could not find libsndfile library")
-endif()
-
-
-if(NOT BUILD_RELOCATABLE)
-# --------------------------------------------------------------------
-# Local or Non-Relocatable build
-
-    add_library( 
-        ${PROJECT_NAME} 
-        MODULE
-        ${PROJECT_SRC}
-        ${PROJECT_HEADERS}
-    )
-
-    # the below is not working on Mac for me so finding and specifying 
-    # header and library explicitly
-    # find_package(Csound)
-
-    if(APPLE)
-        find_path(CSOUND_HEADER_PATH csound.h)
-        find_library(CSOUND_LIBRARY CsoundLib64)
     else()
-        find_path(CSOUND_HEADER_PATH csound/csound.h)
-        find_library(CSOUND_LIBRARY csound64.lib)
-    endif()
+        include(${SCRIPTS_DIR}/macos_common.cmake)        
 
-    if(CSOUND_HEADER_PATH)
-        MESSAGE("found csound header path: ${CSOUND_HEADER_PATH}")
-    else()
-        MESSAGE(FATAL_ERROR "could not find csound header path")
-    endif()
+        if(BUILD_HYBRID)
+            include(${SCRIPTS_DIR}/macos_hybrid.cmake)
         
-    if(CSOUND_LIBRARY)
-      MESSAGE("found csound library path: ${CSOUND_LIBRARY}")
-    else()
-      MESSAGE(FATAL_ERROR "could not find csound library path")
+        else()
+            include(${SCRIPTS_DIR}/macos_local.cmake)
+        
+        endif()
+
     endif()
 
-    target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        ${SRC_DIR}
-        ${CSOUND_HEADER_PATH}
-        $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}/include>
-    )
+elseif(WIN32)
+    message(STATUS "building on Windows")
 
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-        MACOSX
-    )
+    # added windows-specific source
+    list(APPEND PROJECT_SRC ${SRC_DIR}/dllmain_win.c)
 
-    target_link_directories(${PROJECT_NAME}
-        PUBLIC
-        $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}/lib>
-    )
-
-    target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        ${CSOUND_LIBRARY}
-        ${LIBSNDFILE_DYLIB}
-        "-framework CoreFoundation"
-        "-framework CoreServices"
-    )
+    include(${SCRIPTS_DIR}/windows_release.cmake)
 
 else()
-# --------------------------------------------------------------------
-# Relocatable
-
-    set(DEPS ${CMAKE_BINARY_DIR}/deps)
-    set(CSOUND_LIBRARY ${DEPS}/csound-build/libCsoundLib64.a)
-    set(CSOUND_HEADER_PATH ${DEPS}/csound-build/CsoundLib64.framework/Headers)
-    set(EXTERNAL_PATH {CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${PROJECT_NAME}.mxo)
-
-    MESSAGE("CSOUND_HEADER_PATH: ${CSOUND_HEADER_PATH}")
-
-    add_library( 
-        ${PROJECT_NAME} 
-        MODULE
-        ${PROJECT_SRC}
-        ${PROJECT_HEADERS}
-    )
-
-    target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        ${SRC_DIR}
-        ${CSOUND_HEADER_PATH}
-        $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}/include>
-    )
-
-
-    target_compile_definitions(${PROJECT_NAME}
-        PUBLIC
-        MACOSX
-    )
-
-    target_link_directories(${PROJECT_NAME}
-        PUBLIC
-        $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}/lib>
-    )
-
-    # set_target_properties(${PROJECT_NAME} PROPERTIES FRAMEWORK YES)
-
-    target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        ${CSOUND_LIBRARY}
-        ${DEPS/libcsnd6.a}
-        ${LIBSNDFILE_DYLIB}
-        -lcurl
-        "-framework CoreFoundation"
-        "-framework CoreServices"
-        "-framework Accelerate"
-    )
+    message(FATAL_ERROR "can only build on macOS or windows")
 
 endif()
+
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../max-sdk-base/script/max-posttarget.cmake)

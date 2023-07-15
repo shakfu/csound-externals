@@ -7,22 +7,64 @@ if(MAX_SDK_ROOT)
 SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${BOOST_DIR}")
 SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${BOOST_DIR}/lib")
 
+if(NOT APPLE)
+  SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${VCPKG_PACKAGES_DIR}/libsndfile_x64-windows-static/include")
+  SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${VCPKG_PACKAGES_DIR}/libvorbis_x64-windows-static/include")
+  SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${VCPKG_PACKAGES_DIR}/pthreads_x64-windows/include")
+  SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "C:/Program Files/Csound6_x64/include/csound")
+  SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${VCPKG_PACKAGES_DIR}/libogg_x64-windows-static/include")
+  SET(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${VCPKG_PACKAGES_DIR}/libflac_x64-windows-static/include")
+  
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${VCPKG_PACKAGES_DIR}/libsndfile_x64-windows-static/lib")
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${VCPKG_PACKAGES_DIR}/libvorbis_x64-windows-static/lib")
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${VCPKG_PACKAGES_DIR}/pthreads_x64-windows/lib")
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "C:/Program Files/Csound6_x64/lib")
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${VCPKG_PACKAGES_DIR}/libogg_x64-windows-static/lib")
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${VCPKG_PACKAGES_DIR}/libflac_x64-windows-static/lib")
 
+  set(MSP_LIB_DIR
+    "${MAX_SDK_ROOT}/source/c74support/msp-includes/x64")
+  set(MAX_LIB_DIR
+    "${MAX_SDK_ROOT}/source/c74support/max-includes/x64")
+
+endif()
+
+set(MAX_INCLUDES_DIR
+  "${MAX_SDK_ROOT}/source/c74support/max-includes")
+set(MSP_INCLUDES_DIR
+  "${MAX_SDK_ROOT}/source/c74support/msp-includes")
 
 find_package(Boost)
 
-find_library(CORE_SERVICES_FRAMEWORK CoreServices)
-find_library(LAUNCH_SERVICES_FRAMEWORK LaunchServices PATHS ${CORE_SERVICES_FRAMEWORK}/Frameworks)
-find_library(LIBSNDFILE libsndfile PATHS ${MAX_INCLUDES_DIR})
+if(APPLE)
+  find_library(CORE_SERVICES_FRAMEWORK CoreServices)
+  find_library(LAUNCH_SERVICES_FRAMEWORK LaunchServices PATHS ${CORE_SERVICES_FRAMEWORK}/Frameworks)
+  find_library(MAX_AUDIO_FRAMEWORK MaxAudioAPI PATHS ${MSP_INCLUDES_DIR})
+  find_library(MAX_API_FRAMEWORK MaxAPI PATHS ${MAX_INCLUDES_DIR})
+  find_library(LIBSNDFILE libsndfile PATHS ${MAX_INCLUDES_DIR})
+else()
+
+  find_library(MAX_AUDIO_FRAMEWORK MaxAudio PATHS ${MSP_LIB_DIR})
+  find_library(MAX_API_FRAMEWORK MaxAPI PATHS ${MAX_LIB_DIR})
+  find_library(LIBSNDFILE_LIBRARY libsndfile PATHS ${CMAKE_INCLUDE_PATH})
+  find_library(LIBOGG_LIBRARY ogg PATHS ${CMAKE_INCLUDE_PATH})
+  find_library(LIBVORBIS_LIBRARY vorbis PATHS ${CMAKE_INCLUDE_PATH})
+  find_library(LIBPTHREAD_LIBRARY pthreadVC3 PATHS ${CMAKE_INCLUDE_PATH})
+  find_library(LIBFLAC_LIBRARY flac PATHS ${CMAKE_INCLUDE_PATH})
+  find_library(LIBCSOUND_LIBRARY libcsound64 PATHS ${CMAKE_INCLUDE_PATH})
+endif()
 
 option(BUILD_MAX_CSOUND_TILDE "Build csound~ for Max/MSP" ON)
 
 
-check_deps(BUILD_MAX_CSOUND_TILDE
-  Boost_FOUND MAX_AUDIO_FRAMEWORK MAX_API_FRAMEWORK
-  #CORE_SERVICES_FRAMEWORK LIBSNDFILE_LIBRARY LAUNCH_SERVICES_FRAMEWORK)
-  CORE_SERVICES_FRAMEWORK LAUNCH_SERVICES_FRAMEWORK)
-
+if(APPLE)
+  check_deps(BUILD_MAX_CSOUND_TILDE
+    Boost_FOUND MAX_AUDIO_FRAMEWORK MAX_API_FRAMEWORK
+    #CORE_SERVICES_FRAMEWORK LIBSNDFILE_LIBRARY LAUNCH_SERVICES_FRAMEWORK)
+    CORE_SERVICES_FRAMEWORK LAUNCH_SERVICES_FRAMEWORK)
+else()
+ 
+endif()
 
 #message("${MAX_AUDIO_FRAMEWORK} : ${MAX_API_FRAMEWORK} : ${CORE_SERVICES_FRAMEWORK} : ${LIBSNDFILE_LIBRARY}")
 
@@ -43,6 +85,10 @@ set(max_csound_tilde_SRCS
   src/sequencer.cpp
   src/util.cpp)
 
+if(NOT APPLE)
+  list(APPEND max_csound_tilde_SRCS
+    src/dllmain_win.c)
+endif()
 
 set(max_csound_tilde_headers
   src/Args.h
@@ -71,8 +117,11 @@ set(maxcs_SRCS "${max_csound_tilde_SRCS};${max_csound_tilde_headers}")
 #set_source_files_properties(${maxcs_SRCS} PROPERTIES
 #                              COMPILE_FLAGS "-x objective-c++")
 
-set(MAX_OUTPUT_LIB "csound~.mxo")
-
+if(APPLE)
+  set(MAX_OUTPUT_LIB "csound~.mxo")
+else()
+  set(MAX_OUTPUT_LIB "csound~")
+endif()
 
 add_library(${MAX_OUTPUT_LIB} SHARED ${maxcs_SRCS})
 target_link_libraries(${MAX_OUTPUT_LIB}

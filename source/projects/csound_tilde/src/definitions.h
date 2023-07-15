@@ -41,7 +41,7 @@
 // Should be platform AND compiler.
 #ifdef _WINDOWS
 	#define _USE_BOOST_SERIALIZATION
-	typedef unsigned char t_csbyte;
+	typedef unsigned char csbyte;
 #endif
 
 #ifdef MACOSX
@@ -49,12 +49,13 @@
 		// Sequencer uses boost.serialization which requires 1-byte bool (darwin ppc arch uses 4-byte bool).
 		#define _USE_BOOST_SERIALIZATION
 	#endif
-	typedef unsigned char t_csbyte;
+	typedef unsigned char csbyte;
 	typedef unsigned int DWORD;
 #endif
 
 #ifndef FL
 	#define FL(x) x##f
 #endif
+
 
 #endif // _DEFINITIONS_H

@@ -1,117 +1,66 @@
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../max-sdk-base/script/max-pretarget.cmake)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 
 #############################################################
-# MAX EXTERNAL
+# csound~
 #############################################################
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "force it" FORCE)
-
-option(BUILD_RELOCATABLE OFF "builds relocatable macOS bundle")
 
 
-if(NOT BUILD_RELOCATABLE)
+# list(APPEND CMAKE_PREFIX_PATH
+#     "/usr/local"
+#     "/usr/opt"
+#     "$ENV{HOME}/Library/Frameworks"
+#     $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}>
+# )
 
-    include_directories( 
-      "${MAX_SDK_INCLUDES}"
-      "${MAX_SDK_MSP_INCLUDES}"
-      "${MAX_SDK_JIT_INCLUDES}"
-    )
+message(STATUS "CMAKE_PREFIX_PATH:  ${CMAKE_PREFIX_PATH}")
 
+include_directories( 
+    "${MAX_SDK_INCLUDES}"
+    "${MAX_SDK_MSP_INCLUDES}"
+    "${MAX_SDK_JIT_INCLUDES}"
+)
 
-    file(GLOB PROJECT_SRC
-       "*.h"
-       "*.c"
-       "*.cpp"
-    )
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(SCRIPTS_DIR ${CMAKE_SOURCE_DIR}/source/scripts)
 
-    add_library( 
-        ${PROJECT_NAME} 
-        MODULE
-        ${PROJECT_SRC}
-    )
+set(PROJECT_SRC
+    csound6~.c
+)
 
-    # the below is not working on Mac for me so finding and specifying 
-    # header and library explicitly
-    # find_package(Csound)
+set(PROJECT_HEADERS)
 
-    if(APPLE)
-        find_path(CSOUND_HEADER_PATH csound.h)
-        find_library(CSOUND_LIBRARY CsoundLib64)
+if(APPLE)
+    message(STATUS "building on macOS")
+
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING 
+        "override default MACOS_DEPLOYMENT_TARGET" FORCE)
+
+    if(BUILD_RELEASE)
+        include(${SCRIPTS_DIR}/macos_release.cmake)
+
     else()
-        find_path(CSOUND_HEADER_PATH csound/csound.h)
-        find_library(CSOUND_LIBRARY csound64.lib)
-    endif()
+        include(${SCRIPTS_DIR}/macos_common.cmake)        
 
-    if(CSOUND_HEADER_PATH)
-        MESSAGE("found csound header path: ${CSOUND_HEADER_PATH}")
-    else()
-        MESSAGE(FATAL_ERROR "could not find csound header path")
-    endif()
+        if(BUILD_HYBRID)
+            include(${SCRIPTS_DIR}/macos_hybrid.cmake)
         
-    if(CSOUND_LIBRARY)
-      MESSAGE("found csound library path: ${CSOUND_LIBRARY}")
-    else()
-      MESSAGE(FATAL_ERROR "could not find csound library path")
+        else()
+            include(${SCRIPTS_DIR}/macos_local.cmake)
+        
+        endif()
+
     endif()
 
-    target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        ${CSOUND_HEADER_PATH}
-    )
+elseif(WIN32)
+    message(STATUS "building on Windows")
 
-    target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        ${CSOUND_LIBRARY}
-    )
+    # added windows-specific source
+    list(APPEND PROJECT_SRC ${SRC_DIR}/dllmain_win.c)
 
-    else()
+    include(${SCRIPTS_DIR}/windows_release.cmake)
 
-    set(DEPS ${CMAKE_BINARY_DIR}/deps)
-    set(CSOUND_LIBRARY ${DEPS}/csound-build/libCsoundLib64.a)
-    set(CSOUND_HEADER_PATH ${DEPS}/csound-build/CsoundLib64.framework/Headers)
-    set(EXTERNAL_PATH {CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${PROJECT_NAME}.mxo)
-
-    MESSAGE("CSOUND_HEADER_PATH: ${CSOUND_HEADER_PATH}")
-
-    include_directories( 
-      "${MAX_SDK_INCLUDES}"
-      "${MAX_SDK_MSP_INCLUDES}"
-      "${MAX_SDK_JIT_INCLUDES}"
-      "${CSOUND_HEADER_PATH}"
-    )
-
-    file(GLOB PROJECT_SRC
-       "*.h"
-       "*.c"
-       "*.cpp"
-    )
-
-    add_library( 
-        ${PROJECT_NAME} 
-        MODULE
-        ${PROJECT_SRC}
-    )
-
-    target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        ${CSOUND_HEADER_PATH}
-        $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}>/include
-    )
-
-    target_link_directories(${PROJECT_NAME}
-        PUBLIC
-        $<${HAS_HOMEBREW}:${HOMEBREW_PREFIX}>/lib
-        # /usr/local/lib
-    )
-
-    target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        ${CSOUND_LIBRARY}
-        ${DEPS/libcsnd6.a}
-        -lsndfile
-        -lcurl
-        "-framework Accelerate"
-    )
+else()
+    message(FATAL_ERROR "can only build on macOS or windows")
 
 endif()
 
