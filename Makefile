@@ -12,9 +12,12 @@ VCPKG := $(DEPS)/vcpkg/vcpkg
 .PHONY: build hybrid release install-vcpkg build-external \
 		clean clean-build clean-external reset setup 
 
+# for 'build' and 'hybrid': assume `brew install libsndfile boost`
+
 # build   -> csound.mxo
-# hybrid  -> download csound -> libcsnd6.a -> csound.mxo -> csound.mxo (fixed)
-# release -> vcpkg -> libsndfile.a (+deps) -> libcsnd6.a -> csound.mxo
+# hybrid  -> download csound -> libCsoundLib64.a -> csound.mxo -> csound.mxo (+dylibs)
+# release -> download csound -> download deps with vcpkg -> libsndfile.a (+deps)
+# 		  -> libCsoundLib64.a -> csound.mxo
 
 all: build
 

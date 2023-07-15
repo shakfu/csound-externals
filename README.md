@@ -2,7 +2,7 @@
 
 This repo is for testing certain common and build-related improvements to my forks of two [csound](https://csound.com) externals for Max/MSP. Work is done on the individual fork-level with the aim of contributing changes to the parent projects and then common features are tested here:
 
-1. [csound_tilde](https://github.com/shakfu/csound_tilde), the official csound external, which was originally created by Matt Ingalls and maintained by Davis Pyon and Steven Yi. The changes to this external were, to some extent, inspired by Volker Boehm's release in his awesome [downloads]([Downloads](https://vboehm.net/downloads/)) page and also his efforts to modernize the code and convert it into a proper Max Package in his[fork](https://github.com/v7b1/csound_tilde).
+1. [csound_tilde](https://github.com/shakfu/csound_tilde), the official csound external, which was originally created by Matt Ingalls and maintained by Davis Pyon and Steven Yi. The changes to this external were, to some extent, inspired by Volker Boehm's release in his awesome ([Downloads](https://vboehm.net/downloads/)) page and also his efforts to modernize the code and convert it into a proper Max Package in his [fork](https://github.com/v7b1/csound_tilde).
 
 2. Iain Duncan's [csound6~](https://github.com/shakfu/csound_max) Max External, a minimal variant itself based on [csound_pd](https://github.com/csound/csound_pd) a pure-data csound external by Victor Lazarinni. Iinitial experiements to produce relocatable builds were tested in this external
 
